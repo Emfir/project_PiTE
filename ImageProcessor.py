@@ -267,8 +267,8 @@ class ImageProcessor:
             return None, None, None
 
         rot_angle = self.get_rotation_angle(vertical_list)
-        rot_angle_threshold = 0.2
-        if rot_angle > rot_angle_threshold:
+        rot_angle_threshold = 0.15
+        if abs(rot_angle) > rot_angle_threshold:
             print('Angle too big {:f}'.format(rot_angle))
             return None, None, None
         return rot_angle, vertical_list, horizontal_list
