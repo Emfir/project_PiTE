@@ -9,11 +9,43 @@ class Recognition:
         self.data_folder = 'data/'
         self.listOfFiles = os.listdir(self.data_folder)
         self.source = self.data_folder + 'AGENCY.csv'
+        self.vertical_sz = 30
+        self.horizontal_sz = 20
         self.height = 20
         self.width = 20
+        self.board_size = 9
+        self.mask_threshold = 150
         self.knn = self.train_network()
         print('Training complete')
 
+    def prepare_digit_train_sample(self, images):
+        images_low = 12
+        images_high = 412
+        digit = np.zeros((1, self.width * self.height, 3), np.uint8)
+        digit[:, :, 0] = digit[:, :, 1] = digit[:, :, 2] = images[images_low:images_high]
+        digit = digit.reshape(self.height, self.width, 3)
+        return self.scale_input_digit(digit)
+
+    def extract_digit_roi(self, digit):
+        bounding_box_width = 17
+        bounding_box_height = 21
+        bw_digit = cv2.cvtColor(digit, cv2.COLOR_BGR2GRAY)
+        bw_digit = cv2.resize(bw_digit, (bounding_box_width, bounding_box_height))
+        ret, bw_digit = cv2.threshold(bw_digit, 0, 255,
+                                      cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        contours = cv2.findContours(bw_digit, 1, 2)
+        cnt = contours[0]
+        x, y, w, h = cv2.boundingRect(cnt)
+        bw_digit = bw_digit[y:y + h, x:x + w]
+        return bw_digit
+
+    def scale_input_digit(self, digit):
+        bw_digit = self.extract_digit_roi(digit)
+        r, c = bw_digit.shape
+        bw_digit = np.hstack((bw_digit, np.zeros((r, self.horizontal_sz - c))))
+        bw_digit = np.vstack((bw_digit, np.zeros((self.vertical_sz - r, self.horizontal_sz))))
+        # cv2.imwrite('/Trash/dig_{:d}.jpg'.format(count), bw_digit)
+        return bw_digit
 
     def get_sample_digits(self, source):
         digit_low_code = 48
@@ -65,4 +97,47 @@ class Recognition:
             return None
         return knn
 
+    def get_input_sudoku(self, processed_slices):
+        test_imgs = []
+        img_mask = []
+        thresh = self.mask_threshold
+        for img in processed_slices:
+            if img is not None:
+                mask = np.count_nonzero((np.asarray(img) > thresh))
+                test_imgs.append(img)
+                img_mask.append(mask)
 
+        sudoku_set = np.asarray(test_imgs, dtype=np.float32).reshape(-1, self.horizontal_sz * self.vertical_sz)
+        return sudoku_set, img_mask
+
+    def recognize_digits(self, processed_slices):
+        to_recognize, img_mask = self.get_input_sudoku(processed_slices)
+        ret, result, neighbours, dist = self.knn.findNearest(to_recognize, k=5)
+        return result, img_mask
+
+    def print_sudoku(self, digits_list, img_mask):
+        print()
+        for i in range(0, self.board_size):
+            for j in range(0, self.board_size):
+                if j + self.board_size * i >= len(digits_list) or img_mask[j + self.board_size * i] == 0:
+                    print(' ', end=' ')
+                else:
+                    print(int(digits_list[j + self.board_size * i][0]), end=' ')
+            print()
+
+    def get_sudoku_to_solve(self, digits_list, mask):
+        sudoku = []
+        for j in range(0, self.board_size):
+            for i in range(0, self.board_size):
+                if j + self.board_size * i >= len(digits_list) or mask[j + self.board_size * i] == 0:
+                    sudoku.append(0)
+                else:
+                    sudoku.append(int(digits_list[j + self.board_size * i][0]))
+        return sudoku
+
+    def print_solved_sudoku(self, solved_sudoku):
+        print()
+        for j in range(0, self.board_size):
+            for i in range(0, self.board_size):
+                print(int(solved_sudoku[j + self.board_size * i]), end=' ')
+            print()

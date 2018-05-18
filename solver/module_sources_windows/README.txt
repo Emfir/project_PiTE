@@ -1,0 +1,1 @@
+In sudoku solver project properties you have to provide 32-bit python3 include and libs directory paths.
