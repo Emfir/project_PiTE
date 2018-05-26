@@ -7,10 +7,10 @@ import solver.ssolver as solver
 class ImageProcessor:
 
     def __init__(self):
-        self.rho_threshold = 20
+        self.rho_threshold = 10
         self.theta_threshold = 0.2
-        self.lines_cnt_threshold = 170
-        self.test_scaling_factor = 1.0
+        self.lines_cnt_threshold = 110
+        self.test_scaling_factor = 1
         self.deg = 180
         self.v_sz = 30
         self.h_sz = 20
@@ -18,6 +18,56 @@ class ImageProcessor:
         self.crop_offset = 6  # 20 (for perfect image)
         self.hough_lines_cnt = 20
         self.grid_size_px = 360
+
+    def median_of_width(self, list_of_lines):
+        vect = []
+        for x in range(1, len(list_of_lines)):
+            vect.append([(abs(list_of_lines[x][0] )- abs(list_of_lines[x - 1][0] )), x - 1])
+        return vect[int (len(vect) / 2) - 1]
+
+    def removing_indexes(self, list_of_indexes, list_of_lines):
+        list_of_indexes.sort(reverse=True)
+        for x in list_of_indexes:
+            list_of_lines.pop(x)
+        return  list_of_lines
+
+    def filtering_using_median(self, list_of_lines):
+        median, index = self.median_of_width(list_of_lines)
+
+        lower_and_upper_threshold = [6 / 10 * median, 14 / 10 * median]
+        bad_indexes = self.up_to_end(list_of_lines, lower_and_upper_threshold, index) +\
+                      self.down_to_beginning(list_of_lines, lower_and_upper_threshold, index)
+
+
+        return self.removing_indexes(bad_indexes, list_of_lines)
+
+    def up_to_end(self,list_of_lines, lower_and_upper_threshold, index_waypoint):
+        current = index_waypoint
+        next = index_waypoint + 1
+        bad_indeks = []
+        while next != len(list_of_lines):
+            if lower_and_upper_threshold[0] <= (abs(list_of_lines[next][0]) - abs(list_of_lines[current][0])) <= lower_and_upper_threshold[1]:
+                current = next
+                next += 1
+            else:
+                bad_indeks.append(next)
+                next += 1
+        return bad_indeks
+
+    def down_to_beginning(self,list_of_lines, lower_and_upper_threshold, index_waypoint):
+        current = index_waypoint + 1
+        previous = index_waypoint
+        bad_indeks = []
+        while previous != -1:
+
+            if lower_and_upper_threshold[0] <= (abs(list_of_lines[current][0]) - abs(list_of_lines[previous][0])) <= \
+                    lower_and_upper_threshold[1]:
+                current = previous
+                previous -= 1
+            else:
+                bad_indeks.append(previous)
+                previous -= 1
+        return bad_indeks
 
     def theta_modification(self, theta):
         angle_threshold = 170
@@ -119,8 +169,10 @@ class ImageProcessor:
     def create_slices(self, img, vertical_list, horizontal_list):
         img_list = []
         points = []
+        cos = 0
         for j in range(len(horizontal_list) - 1):
             for i in range(len(vertical_list) - 1):
+
                 for x in range(2):
                     rho = vertical_list[i + x][0]
                     theta = vertical_list[i + x][1]
@@ -134,12 +186,17 @@ class ImageProcessor:
                     p1 = int(p1)
                     p2 = int(p2)
                     points.append((p1, p2))
+                cos += 1
                 temp_img = self.cut_slice(img, points)
+                cv2.imwrite('without_preparation/lines{:d}.png'.format(cos), temp_img)
                 if self.is_slice_blank(temp_img):
                     temp_img[:] = 0
                 # bs = 16  # 16 (for perfect image)
                 # tempImg = cv2.copyMakeBorder
                 # (tempImg, top=bs, bottom=bs, left=bs, right=bs, borderType= cv2.BORDER_CONSTANT, value=[0,0,0] )
+                cv2.imwrite('proba/lines{:d}.png'.format(cos), temp_img)
+
+
                 img_list.append(temp_img)
                 points.clear()
         return img_list
@@ -239,28 +296,46 @@ class ImageProcessor:
             return None, None, None
 
         filtered_lines = self.filter_lines(lines)
-        if len(filtered_lines) != self.hough_lines_cnt:
-            print('Bad lines count {:d}'.format(len(filtered_lines)))
-            debug = False
-            if debug:
-                gray = frame.copy()
-                for rt in filtered_lines:
-                    rho = rt[0][0]
-                    theta = rt[0][1]
-                    a = np.cos(theta)
-                    b = np.sin(theta)
-                    x0 = a * rho
-                    y0 = b * rho
-                    x1 = int(x0 + self.line_len * (-b))
-                    y1 = int(y0 + self.line_len * a)
-                    x2 = int(x0 - self.line_len * (-b))
-                    y2 = int(y0 - self.line_len * a)
-                    cv2.line(gray, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                cv2.imwrite('lines.png', gray)
-            return None, None, None
-
         vertical_list, horizontal_list = self.classify_lines(filtered_lines)
         self.sort_line_lists(vertical_list, horizontal_list)
+        vertical_list = self.filtering_using_median(vertical_list)
+        horizontal_list = self.filtering_using_median(horizontal_list)
+
+        gray = frame.copy()
+        debug = True
+        if debug:
+
+            for rt in vertical_list + horizontal_list:
+                rho = rt[0]
+                theta = rt[1]
+                a = np.cos(theta)
+                b = np.sin(theta)
+                x0 = a * rho
+                y0 = b * rho
+                x1 = int(x0 + self.line_len * (-b))
+                y1 = int(y0 + self.line_len * a)
+                x2 = int(x0 - self.line_len * (-b))
+                y2 = int(y0 - self.line_len * a)
+                cv2.line(gray, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+            cv2.imshow('frame', gray)
+            cv2.waitKey(500)
+            cv2.imwrite('lines.png', gray)
+
+
+        if len(vertical_list) + len (horizontal_list) != self.hough_lines_cnt:
+            print('Bad lines count {:d}'.format(len(vertical_list) + len (horizontal_list)))
+
+            return None, None, None
+
+
+        self.sort_line_lists(vertical_list, horizontal_list)
+        print (len(vertical_list), len(horizontal_list))
+
+
+
+
+
 
         if len(vertical_list) != self.hough_lines_cnt / 2 or len(horizontal_list) != self.hough_lines_cnt / 2:
             print('Bad lines count v:{:d} h:{:d}'.format(len(vertical_list), len(horizontal_list)))
@@ -274,12 +349,24 @@ class ImageProcessor:
         return rot_angle, vertical_list, horizontal_list
 
     def process_frame(self, frame):
-        rot_angle, vertical_list, horizontal_list = self.preprocess_frame(frame)
-        if not rot_angle:
-            return
-        rot_frame, vertical_list, horizontal_list = self.get_rotated_frame(frame, rot_angle, vertical_list,
-                                                                           horizontal_list)
-        rot_angle, vertical_list, horizontal_list = self.preprocess_frame(rot_frame)
+
+        for self.rho_threshold in range(5, 100, 5):
+            for self.lines_cnt_threshold in range (100, 170, 5):
+                rot_angle, vertical_list, horizontal_list = self.preprocess_frame(frame)
+                if not rot_angle:
+                    continue
+                rot_frame, vertical_list, horizontal_list = self.get_rotated_frame(frame, rot_angle, vertical_list,
+                                                                                   horizontal_list)
+                rot_angle, vertical_list, horizontal_list = self.preprocess_frame(rot_frame)
+                if rot_angle != None:
+                    break
+
+
+            if rot_angle != None:
+                break
+
+        print ( self.rho_threshold, self.lines_cnt_threshold)
+
         if not rot_angle:
             return
         inverted_frame = cv2.bitwise_not(rot_frame)
@@ -290,7 +377,8 @@ class ImageProcessor:
         try:
             processed_images = self.binarize_slices(img_list)
             return processed_images
-        except ValueError:
+        except ValueError as e:
+            print ( e)
             return None
 
 

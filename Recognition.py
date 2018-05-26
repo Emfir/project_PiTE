@@ -57,7 +57,9 @@ class Recognition:
         return strength, italic, df0
 
     def get_train_set_labeled(self, count, training_digits):
-        set_size = 4350
+        #set_size = 4350
+        set_size = len(training_digits)
+        print(set_size)
         train_set = np.asarray(training_digits[:set_size], dtype=np.float32) \
             .reshape(-1, self.horizontal_sz * self.vertical_sz)
         k = np.arange(self.board_size, -1, -1)
@@ -80,9 +82,14 @@ class Recognition:
                         zm += 1
                         if zm == 11:
                             break
+
+
                         bw_digit = self.prepare_digit_train_sample(images)
+                        cv2.imwrite('Trash/lines{:s}{:d}.png'.format(source, count), bw_digit)
+
                         count += 1
                         training_digits.append(bw_digit)
+                    break
 
         train_set, train_labels = self.get_train_set_labeled(count, training_digits)
         return train_set, train_labels
