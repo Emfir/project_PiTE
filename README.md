@@ -14,14 +14,15 @@ Example image segmented by the image segmentation module:
 Digit recognition part has been created using [Keras API](https://keras.io/ "Keras API Documentation") with [Tensorflow](https://www.tensorflow.org/ "Tensorflow page") backend and is realised
 as a 2D convolutional neural network ( CNN ). 
 
-To train the network example [data set](https://drive.google.com/open?id=19WWg2E-NvJ4v0f1SEvj1SihVsiVyVVbK "Train digits dataset") has been used. This data set consists of *.csv files that represent 440 different fonts ( for digits only ).
+To train the network example [data set](https://drive.google.com/open?id=19WWg2E-NvJ4v0f1SEvj1SihVsiVyVVbK "Train digits data set") has been used. This data set consists of *.csv files that represent 440 different fonts ( for digits only ).
+The above font data was downloaded from [University of California archive](https://archive.ics.uci.edu/ml/datasets/Character+Font+Images) website.
 
-The example trained network that is attatched in the main repository folder achieved 97.5% of accuracy
+The example trained network that is attached in the main repository folder achieved 97.5% of accuracy
 ( the test set consisted of 10% of the whole data set, and was not used during training, according to the validation rules ) .
 
 [Training accuracy plot](https://drive.google.com/open?id=1MhmXfo-NzXbYHimTLJT9273sFdbslIQC)
 
-Finally the sudoku solver module has been written in C as a CPython Extension module.
+Finally the Sudoku solver module has been written in C as a CPython Extension module.
 The repository folder **solver/** contains precompiled modules for MS Windows working with Python version 3.6 and Linux working with Python versions 3.4, 3.5 and 3.6 .
 Inside the **solver/** directory there are also project source files for the solver module that can be compiled under MS Windows ( using Visual Studio ) and Linux ( with gcc ).
 Mac OS has not been tested, but the solver compilation process could possibly work using the gcc.
@@ -32,7 +33,7 @@ A demo video file showing how the OCR Sudoku solver works can be viewed here:
 
 [Sudoku solver in action](https://drive.google.com/open?id=1Y8--qQIg5aF-AB7V7U96fGcGT8ESZG9j "Video")
 
-The test sudoku has been designed to work against the backtracking algorithm ( is good for benchamarking ).
+The test sudoku has been designed to work against the backtracking algorithm ( is good for benchhttps://archive.ics.uci.edumarking ).
 
 ![Hard sudoku](https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Sudoku_puzzle_hard_for_brute_force.svg/361px-Sudoku_puzzle_hard_for_brute_force.svg.png)
 
