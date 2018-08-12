@@ -33,7 +33,7 @@ A demo video file showing how the OCR Sudoku solver works can be viewed here:
 
 [Sudoku solver in action](https://drive.google.com/open?id=1Y8--qQIg5aF-AB7V7U96fGcGT8ESZG9j "Video")
 
-The test sudoku has been designed to work against the backtracking algorithm ( is good for benchhttps://archive.ics.uci.edumarking ).
+The test sudoku has been designed to work against the backtracking algorithm ( is good for benchmarking ).
 
 ![Hard sudoku](https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Sudoku_puzzle_hard_for_brute_force.svg/361px-Sudoku_puzzle_hard_for_brute_force.svg.png)
 
@@ -43,8 +43,11 @@ You can also visit the [Sudoku algorithms Wikipedia page](https://en.wikipedia.o
 Debian / Ubuntu 
 To install modules required to run the project, 
 create new virtual environment ( or run the commands below directly in the terminal )
-``` sudo apt install python3-pip ``` ( if pip for Python 3 is not installed on Your system)
+
+``` sudo apt install python3-pip ```    ( if pip for Python 3 is not installed on Your system)
+
 then run
+
 ``` pip3 install opencv-python keras tensorflow pandas matplotlib ```
 
 # How to run the solver
